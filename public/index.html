@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App</title>
+  <style>
+    body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+    #chat-container { width: 100%; max-width: 600px; background: white; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); border-radius: 8px; overflow: hidden; }
+    #header { background-color: #007bff; color: white; padding: 15px; font-size: 20px; }
+    #messages { border-top: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; display: flex; flex-direction: column; }
+    .message { padding: 10px; margin: 5px; border-radius: 10px; max-width: 70%; }
+    .message.user { background-color: #dcf8c6; align-self: flex-end; text-align: right; }
+    .message.other { background-color: #ffffff; align-self: flex-start; text-align: left; border: 1px solid #ddd; }
+    #message-form { display: flex; border-top: 1px solid #ddd; padding: 10px; }
+    #input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+    #send { padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="header">Chat Room</div>
+    <div id="messages"></div>
+    <form id="message-form">
+      <input id="input" autocomplete="off" placeholder="Type a message..." />
+      <button id="send" type="submit">Send</button>
+    </form>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const socket = io();
+      const form = document.getElementById('message-form');
+      const input = document.getElementById('input');
+      const messages = document.getElementById('messages');
+      
+      let username = sessionStorage.getItem('username');
+      if (!username) {
+        username = prompt("Please enter your username:");
+        sessionStorage.setItem('username', username);
+      }
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit('chat message', { name: username, message: input.value });
+          input.value = '';
+        }
+      });
+
+      socket.on('chat message', (msg) => {
+        const item = document.createElement('div');
+        item.classList.add('message');
+        item.classList.add(msg.name === username ? 'user' : 'other');
+        item.textContent = `${msg.name}: ${msg.message}`;
+        messages.appendChild(item);
+        messages.scrollTop = messages.scrollHeight;
+      });
+    });
+  </script>
+</body>
+</html>

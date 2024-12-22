@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat App with Voice</title>
+  <style>
+    /* إضافة بعض تنسيقات CSS الأساسية */
+    #chat-container { display: flex; flex-direction: column; align-items: center; }
+    #controls { margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div id="chat-container">
+    <div id="messages"></div>
+    <button id="startCall">Start Voice Call</button>
+    <button id="endCall" disabled>End Voice Call</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
+    let peerConnection;
+    const startCallButton = document.getElementById('startCall');
+    const endCallButton = document.getElementById('endCall');
+
+    startCallButton.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+      peerConnection = new RTCPeerConnection();
+      peerConnection.onicecandidate = ({ candidate }) => {
+        if (candidate) socket.emit('candidate', candidate);
+      };
+      peerConnection.ontrack = ({ streams: [stream] }) => {
+        const audio = document.createElement('audio');
+        audio.srcObject = stream;
+        audio.play();
+      };
+
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      socket.emit('offer', offer);
+
+      startCallButton.disabled = true;
+      endCallButton.disabled = false;
+    };
+
+    endCallButton.onclick = () => {
+      peerConnection.close();
+      startCallButton.disabled = false;
+      endCallButton.disabled = true;
+    };
+
+    socket.on('offer', async (offer) => {
+      peerConnection = new RTCPeerConnection();
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      socket.emit('answer', answer);
+    });
+
+    socket.on('answer', (answer) => {
+      peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+    });
+
+    socket.on('candidate', (candidate) => {
+      peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+    });
+  </script>
+</body>
+</html>

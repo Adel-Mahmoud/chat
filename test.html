@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحويل عنصر إلى صورة</title>
+</head>
+<body>
+    <div id="element-to-capture" style="width: 200px; height: 200px; background-color: lightblue; text-align: center; border: 2px solid black; padding: 20px;">
+        <h3 style="font-family: Arial; font-size: 18px; color: darkblue;">هذه صورة العنصر</h3>
+    </div>
+
+    <button onclick="convertToImage()">تحويل إلى صورة وتحميلها</button>
+
+    <script>
+        function convertToImage() {
+            var element = document.getElementById("element-to-capture");
+
+            // إنشاء عنصر canvas
+            var canvas = document.createElement("canvas");
+            var context = canvas.getContext("2d");
+
+            // ضبط أبعاد الـ canvas لتكون بنفس أبعاد العنصر
+            canvas.width = element.offsetWidth;
+            canvas.height = element.offsetHeight;
+
+            // رسم خلفية العنصر
+            context.fillStyle = getComputedStyle(element).backgroundColor;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // رسم الحدود (إذا كانت موجودة)
+            context.strokeStyle = getComputedStyle(element).borderColor;
+            context.lineWidth = 2; // إذا كان هناك حواف
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+
+            // رسم النص داخل العنصر
+            var h3 = element.querySelector("h3");
+            context.fillStyle = getComputedStyle(h3).color;
+            context.font = getComputedStyle(h3).fontSize + " " + getComputedStyle(h3).fontFamily;
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText(h3.textContent, canvas.width / 2, canvas.height / 2);
+
+            // تحويل canvas إلى صورة باستخدام data URL
+            var imageData = canvas.toDataURL("image/png");
+
+            // إنشاء رابط تحميل تلقائي
+            var downloadLink = document.createElement("a");
+            downloadLink.href = imageData;
+            downloadLink.download = "captured-image.png"; // اسم الصورة عند التنزيل
+
+            // تفعيل التحميل مباشرة
+            downloadLink.click();
+        }
+    </script>
+</body>
+</html>
